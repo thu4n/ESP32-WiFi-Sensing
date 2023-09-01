@@ -7,12 +7,12 @@ if __name__ == "__main__":
     This script file demonstrates how to transform raw CSI out from the ESP32 into CSI-amplitude and CSI-phase.
     """
 
-    FILE_NAME = "./datasets/mtd02_copy.csv"
+    FILE_NAME = "D:\\Wifi_Sensing\\esp32-wifi-sensing\\datasets\\prep\\tvat-la-01-prep.csv"
 
     f = open(FILE_NAME)
     col_amp = []
     col_pha = []
-    df = pd.read_csv("D:\\Wifi_Sensing\\esp32-csi-tool\\datasets\\mtd02_prep1.csv")
+    df = pd.read_csv("D:\\Wifi_Sensing\\esp32-wifi-sensing\\datasets\\prep\\tvat-la-01-prep - Copy.csv")
     for j, l in enumerate(f.readlines()):
         imaginary = []
         real = []
@@ -39,4 +39,4 @@ if __name__ == "__main__":
 
     df['amplitude'] = col_amp
     df['phase'] = col_pha
-    df.to_csv("D:\\Wifi_Sensing\\esp32-csi-tool\\datasets\\mtd02_prep2.csv")
+    df.to_csv("D:\\Wifi_Sensing\\esp32-wifi-sensing\\datasets\\prep\\tvat-la-01-prep2.csv")
