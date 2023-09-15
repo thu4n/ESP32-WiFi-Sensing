@@ -1,6 +1,7 @@
 from CSIKit.filters.passband import lowpass
 from CSIKit.filters.statistical import running_mean
 from CSIKit.util.filters import hampel
+import pandas as pd
 
 from CSIKit.reader import get_reader
 from CSIKit.tools.batch_graph import BatchGraph
@@ -29,5 +30,6 @@ for x in range(no_frames):
 #  csi_matrix_squeezed[x] = hampel(csi_matrix_squeezed[x], 10, 3)
   csi_matrix_squeezed[x] = running_mean(csi_matrix_squeezed[x], 10)
 
-
-BatchGraph.plot_heatmap(csi_matrix_squeezed, csi_data.timestamps)
+DF = pd.DataFrame(csi_matrix_squeezed)
+DF.to_csv("datasets/prep/tvat-la-01-running-mean.csv")
+#BatchGraph.plot_heatmap(csi_matrix_squeezed, csi_data.timestamps)
