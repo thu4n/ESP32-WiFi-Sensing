@@ -1,34 +1,32 @@
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.decomposition import PCA
 
-# Load the data from the CSV file
-data = pd.read_csv('datasets/tch-prep/tch-csi-10-running-mean.csv',skiprows=1, usecols=list(range(1, 64)), index_col=None)
+def draw_heatmap(csi_data, x_label, y_label, title):
+  """Draws a heatmap of the given CSI data.
 
-# Reshape the data into a 2D matrix, with each row representing a subcarrier and each column representing a data point.
-#data_matrix = data.to_numpy().reshape((64, -1))
+  Args:
+    csi_data: A numpy array containing the CSI data.
+    x_label: The label for the x-axis of the heatmap.
+    y_label: The label for the y-axis of the heatmap.
+    title: The title of the heatmap.
+  """
 
-# Standardize the data
-standardized_data = (data - data.mean()) / data.std()
+  # Create a heatmap object.
+  heatmap = plt.pcolormesh(csi_data)
 
-# Create a PCA object
-pca = PCA()
+  # Set the x and y labels.
+  plt.xlabel(x_label)
+  plt.ylabel(y_label)
 
-# Fit the PCA object to the data
-pca.fit(standardized_data)
+  # Set the title.
+  plt.title(title)
 
-# Transform the data using the PCA object
-transformed_data = pca.transform(standardized_data)
+  # Show the heatmap.
+  plt.colorbar()
+  plt.show()
 
-# Analyze the results
-# For example, you can plot the transformed data to see how the different principal components are related to each other.
-# Plot the transformed data
-plt.scatter(transformed_data[:, 0], transformed_data[:, 1])
-plt.xlabel("Principal Component 1")
-plt.ylabel("Principal Component 2")
-plt.title("Plot of Transformed Data")
-plt.show()
+# Load the CSI data into a numpy array.
+csi_data = np.loadtxt("datasets/tch-prep/tch-pca-2.csv", delimiter=",")
 
-# Export the transformed data to a CSV file
-pd.DataFrame(transformed_data).to_csv('datasets/tch-prep/tch-pca.csv', index=False)
+# Draw the heatmap.
+draw_heatmap(csi_data, "X-axis", "Y-axis", "CSI Data Heatmap")

@@ -31,5 +31,5 @@ for x in range(no_frames):
   csi_matrix_squeezed[x] = running_mean(csi_matrix_squeezed[x], 10)
 
 DF = pd.DataFrame(csi_matrix_squeezed)
-#DF.to_csv("datasets/tch-prep/tch-csi-10-running-mean.csv")
-BatchGraph.plot_heatmap(csi_matrix_squeezed, csi_data.timestamps)
+DF.to_csv("datasets/tch-prep/tch-csi-10-running-mean.csv")
+#BatchGraph.plot_heatmap(csi_matrix_squeezed, csi_data.timestamps)
