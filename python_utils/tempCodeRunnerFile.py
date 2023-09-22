@@ -1,35 +1,34 @@
-from CSIKit.filters.passband import lowpass
-from CSIKit.filters.statistical import running_mean
-from CSIKit.util.filters import hampel
-import pandas as pd
-
-from CSIKit.reader import get_reader
-from CSIKit.tools.batch_graph import BatchGraph
-from CSIKit.util import csitools
-
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
 
-my_reader = get_reader("datasets/prep/tvat-la-01.csv")
-csi_data = my_reader.read_file("datasets/prep/tvat-la-01.csv", scaled=True)
-csi_matrix, no_frames, no_subcarriers = csitools.get_CSI(csi_data, metric="amplitude")
+# Load the data from the CSV file
+data = pd.read_csv('datasets/tch-prep/tch-csi-10-running-mean.csv',skiprows=1, usecols=list(range(1, 64)), index_col=None)
 
-# CSI matrix is now returned as (no_frames, no_subcarriers, no_rx_ant, no_tx_ant).
-# First we'll select the first Rx/Tx antenna pairing.
-csi_matrix_first = csi_matrix[:, :, 0, 0]
-# Then we'll squeeze it to remove the singleton dimensions.
-csi_matrix_squeezed = np.squeeze(csi_matrix_first)
+# Reshape the data into a 2D matrix, with each row representing a subcarrier and each column representing a data point.
+#data_matrix = data.to_numpy().reshape((64, -1))
 
-# This example assumes CSI data is sampled at ~100Hz.
-# In this example, we apply (sequentially):
-#  - a lowpass filter to isolate frequencies below 10Hz (order = 5)
-#  - a hampel filter to reduce high frequency noise (window size = 10, significance = 3)
-#  - a running mean filter for smoothing (window size = 10)
+# Standardize the data
+standardized_data = (data - data.mean()) / data.std()
 
-for x in range(no_frames):
-#  csi_matrix_squeezed[x] = lowpass(csi_matrix_squeezed[x], 10, 100, 5)
-#  csi_matrix_squeezed[x] = hampel(csi_matrix_squeezed[x], 10, 3)
-  csi_matrix_squeezed[x] = running_mean(csi_matrix_squeezed[x], 10)
+# Create a PCA object
+pca = PCA()
 
-DF = pd.DataFrame(csi_matrix_squeezed)
-DF.to_csv("datasets/prep/tvat-la-01-running-mean.csv")
-#BatchGraph.plot_heatmap(csi_matrix_squeezed, csi_data.timestamps)
+# Fit the PCA object to the data
+pca.fit(standardized_data)
+
+# Transform the data using the PCA object
+transformed_data = pca.transform(standardized_data)
+
+# Analyze the results
+# For example, you can plot the transformed data to see how the different principal components are related to each other.
+# Plot the transformed data
+plt.scatter(transformed_data[:, 0], transformed_data[:, 1])
+plt.xlabel("Principal Component 1")
+plt.ylabel("Principal Component 2")
+plt.title("Plot of Transformed Data")
+plt.show()
+
+# Export the transformed data to a CSV file
+pd.DataFrame(transformed_data).to_csv('datasets/tch-prep/tch-pca.csv', index=False)

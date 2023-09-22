@@ -9,8 +9,8 @@ from CSIKit.util import csitools
 
 import numpy as np
 
-my_reader = get_reader("datasets/prep/tvat-la-01.csv")
-csi_data = my_reader.read_file("datasets/prep/tvat-la-01.csv", scaled=True)
+my_reader = get_reader("datasets/tch-prep/tch-csi-10.csv")
+csi_data = my_reader.read_file("datasets/tch-prep/tch-csi-10.csv", scaled=True)
 csi_matrix, no_frames, no_subcarriers = csitools.get_CSI(csi_data, metric="amplitude")
 
 # CSI matrix is now returned as (no_frames, no_subcarriers, no_rx_ant, no_tx_ant).
@@ -31,5 +31,5 @@ for x in range(no_frames):
   csi_matrix_squeezed[x] = running_mean(csi_matrix_squeezed[x], 10)
 
 DF = pd.DataFrame(csi_matrix_squeezed)
-DF.to_csv("datasets/prep/tvat-la-01-running-mean.csv")
-#BatchGraph.plot_heatmap(csi_matrix_squeezed, csi_data.timestamps)
+#DF.to_csv("datasets/tch-prep/tch-csi-10-running-mean.csv")
+BatchGraph.plot_heatmap(csi_matrix_squeezed, csi_data.timestamps)
