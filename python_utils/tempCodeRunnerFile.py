@@ -1,32 +1,43 @@
-import numpy as np
-import matplotlib.pyplot as plt
+import re
+import pandas as pd
+from math import sqrt, atan2
 
-def draw_heatmap(csi_data, x_label, y_label, title):
-  """Draws a heatmap of the given CSI data.
+if __name__ == "__main__":
+    """
+    This script file demonstrates how to transform raw CSI out from the ESP32 into CSI-amplitude and CSI-phase.
+    """
 
-  Args:
-    csi_data: A numpy array containing the CSI data.
-    x_label: The label for the x-axis of the heatmap.
-    y_label: The label for the y-axis of the heatmap.
-    title: The title of the heatmap.
-  """
+    FILE_NAME = "D:\\Wifi_Sensing\\esp32-wifi-sensing\\datasets\\tch-prep\\tch-csi-10 - Copy.csv"
 
-  # Create a heatmap object.
-  heatmap = plt.pcolormesh(csi_data)
+    f = open(FILE_NAME)
+    col_amp = []
+    col_pha = []
+    df = pd.DataFrame()
+    #df = df.drop(0)
+    for j, l in enumerate(f.readlines()):
+        imaginary = []
+        real = []
+        amplitudes = []
+        phases = []
 
-  # Set the x and y labels.
-  plt.xlabel(x_label)
-  plt.ylabel(y_label)
+        # Parse string to create integer list
+        csi_string = re.findall(r"\[(.*)\]", l)[0]
+        csi_raw = [int(x) for x in csi_string.split(" ") if x != '']
 
-  # Set the title.
-  plt.title(title)
+        # Create list of imaginary and real numbers from CSI
+        for i in range(len(csi_raw)):
+            if i % 2 == 0:
+                imaginary.append(csi_raw[i])
+            else:
+                real.append(csi_raw[i])
 
-  # Show the heatmap.
-  plt.colorbar()
-  plt.show()
+        # Transform imaginary and real into amplitude and phase
+        for i in range(int(len(csi_raw) / 2)):
+            amplitudes.append(sqrt(imaginary[i] ** 2 + real[i] ** 2))
+            phases.append(atan2(imaginary[i], real[i]))
+        col_amp.append(amplitudes)
+        col_pha.append(phases)
 
-# Load the CSI data into a numpy array.
-csi_data = np.loadtxt("datasets/tch-prep/tch-pca-2.csv", delimiter=",")
-
-# Draw the heatmap.
-draw_heatmap(csi_data, "X-axis", "Y-axis", "CSI Data Heatmap")
+    df['amplitude'] = col_amp
+    df['phase'] = col_pha
+    df.to_csv("D:\\Wifi_Sensing\\esp32-wifi-sensing\\datasets\\tch-prep\\tch-prep-amp.csv")

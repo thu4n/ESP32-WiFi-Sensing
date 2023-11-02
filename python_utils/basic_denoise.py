@@ -9,8 +9,8 @@ from CSIKit.util import csitools
 
 import numpy as np
 
-my_reader = get_reader("datasets/tch-prep/tch-csi-10.csv")
-csi_data = my_reader.read_file("datasets/tch-prep/tch-csi-10.csv", scaled=True)
+my_reader = get_reader("datasets/tch-prep/tch-csi-10-LA.csv")
+csi_data = my_reader.read_file("datasets/tch-prep/tch-csi-10-LA.csv", scaled=True)
 csi_matrix, no_frames, no_subcarriers = csitools.get_CSI(csi_data, metric="amplitude")
 
 # CSI matrix is now returned as (no_frames, no_subcarriers, no_rx_ant, no_tx_ant).
@@ -25,11 +25,11 @@ csi_matrix_squeezed = np.squeeze(csi_matrix_first)
 #  - a hampel filter to reduce high frequency noise (window size = 10, significance = 3)
 #  - a running mean filter for smoothing (window size = 10)
 
-for x in range(no_frames):
+#for x in range(no_frames):
 #  csi_matrix_squeezed[x] = lowpass(csi_matrix_squeezed[x], 10, 100, 5)
 #  csi_matrix_squeezed[x] = hampel(csi_matrix_squeezed[x], 10, 3)
-  csi_matrix_squeezed[x] = running_mean(csi_matrix_squeezed[x], 10)
+  #csi_matrix_squeezed[x] = running_mean(csi_matrix_squeezed[x], 10)
 
 DF = pd.DataFrame(csi_matrix_squeezed)
-DF.to_csv("datasets/tch-prep/tch-csi-10-running-mean.csv")
-#BatchGraph.plot_heatmap(csi_matrix_squeezed, csi_data.timestamps)
+#DF.to_csv("datasets/tch-prep/tch-csi-10-running-mean.csv")
+BatchGraph.plot_heatmap(csi_matrix_squeezed, csi_data.timestamps)
