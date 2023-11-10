@@ -1,43 +1,35 @@
-import re
+from CSIKit.filters.passband import lowpass
+from CSIKit.filters.statistical import running_mean
+from CSIKit.util.filters import hampel
 import pandas as pd
-from math import sqrt, atan2
 
-if __name__ == "__main__":
-    """
-    This script file demonstrates how to transform raw CSI out from the ESP32 into CSI-amplitude and CSI-phase.
-    """
+from CSIKit.reader import get_reader
+from CSIKit.tools.batch_graph import BatchGraph
+from CSIKit.util import csitools
 
-    FILE_NAME = "D:\\Wifi_Sensing\\esp32-wifi-sensing\\datasets\\tch-prep\\tch-csi-10 - Copy.csv"
+import numpy as np
 
-    f = open(FILE_NAME)
-    col_amp = []
-    col_pha = []
-    df = pd.DataFrame()
-    #df = df.drop(0)
-    for j, l in enumerate(f.readlines()):
-        imaginary = []
-        real = []
-        amplitudes = []
-        phases = []
+my_reader = get_reader("datasets/tch-prep/tch-csi-10-LA.csv")
+csi_data = my_reader.read_file("datasets/tch-prep/tch-csi-10-LA.csv", scaled=True)
+csi_matrix, no_frames, no_subcarriers = csitools.get_CSI(csi_data, metric="amplitude")
 
-        # Parse string to create integer list
-        csi_string = re.findall(r"\[(.*)\]", l)[0]
-        csi_raw = [int(x) for x in csi_string.split(" ") if x != '']
+# CSI matrix is now returned as (no_frames, no_subcarriers, no_rx_ant, no_tx_ant).
+# First we'll select the first Rx/Tx antenna pairing.
+csi_matrix_first = csi_matrix[:, :, 0, 0]
+# Then we'll squeeze it to remove the singleton dimensions.
+csi_matrix_squeezed = np.squeeze(csi_matrix_first)
 
-        # Create list of imaginary and real numbers from CSI
-        for i in range(len(csi_raw)):
-            if i % 2 == 0:
-                imaginary.append(csi_raw[i])
-            else:
-                real.append(csi_raw[i])
+# This example assumes CSI data is sampled at ~100Hz.
+# In this example, we apply (sequentially):
+#  - a lowpass filter to isolate frequencies below 10Hz (order = 5)
+#  - a hampel filter to reduce high frequency noise (window size = 10, significance = 3)
+#  - a running mean filter for smoothing (window size = 10)
 
-        # Transform imaginary and real into amplitude and phase
-        for i in range(int(len(csi_raw) / 2)):
-            amplitudes.append(sqrt(imaginary[i] ** 2 + real[i] ** 2))
-            phases.append(atan2(imaginary[i], real[i]))
-        col_amp.append(amplitudes)
-        col_pha.append(phases)
+#for x in range(no_frames):
+#  csi_matrix_squeezed[x] = lowpass(csi_matrix_squeezed[x], 10, 100, 5)
+#  csi_matrix_squeezed[x] = hampel(csi_matrix_squeezed[x], 10, 3)
+  #csi_matrix_squeezed[x] = running_mean(csi_matrix_squeezed[x], 10)
 
-    df['amplitude'] = col_amp
-    df['phase'] = col_pha
-    df.to_csv("D:\\Wifi_Sensing\\esp32-wifi-sensing\\datasets\\tch-prep\\tch-prep-amp.csv")
+DF = pd.DataFrame(csi_matrix_squeezed)
+#DF.to_csv("datasets/tch-prep/tch-csi-10-running-mean.csv")
+BatchGraph.plot_heatmap(csi_matrix_squeezed, csi_data.timestamps)

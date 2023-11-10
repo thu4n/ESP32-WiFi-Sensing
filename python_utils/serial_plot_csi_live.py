@@ -33,7 +33,8 @@ def carrier_plot(amp):
     plt.clf()
     df = np.asarray(amp, dtype=np.int32)
     # Can be changed to df[x] to plot sub-carrier x only (set color='r' also)
-    plt.plot(range(100 - len(amp), 100), df[:, subcarrier], color='r')
+    plt.plot(range(100 - len(amp), 100), df[:, 1:44], color='r')
+    #plt.imshow
     plt.xlabel("Time")
     plt.ylabel("Amplitude")
     plt.xlim(0, 100)
