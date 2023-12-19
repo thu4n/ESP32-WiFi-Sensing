@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import math
 import numpy as np
 import collections
+import signal
+
 #from hampel import hampel
 import pandas as pd
 #import tensorrt as trt
@@ -14,7 +16,7 @@ packet_count = 0
 
 # Deque definition
 perm_amp = collections.deque(maxlen=200)
-perm_phase = collections.deque(maxlen=100)
+perm_phase = collections.deque(maxlen=200)
 
 # Function to load TensorRT engine
 def load_engine(engine_path):
