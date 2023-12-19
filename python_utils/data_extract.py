@@ -3,7 +3,11 @@ import matplotlib.pyplot as plt
 import math
 import numpy as np
 import collections
-from wait_timer import WaitTimer
+#from hampel import hampel
+import pandas as pd
+#import tensorrt as trt
+#import common
+
 from read_stdin import readline, print_until_first_csi_line
 
 packet_count = 0
@@ -12,6 +16,33 @@ packet_count = 0
 perm_amp = collections.deque(maxlen=200)
 perm_phase = collections.deque(maxlen=100)
 
+# Function to load TensorRT engine
+def load_engine(engine_path):
+    with open(engine_path, 'rb') as f, trt.Runtime(trt.Logger(trt.Logger.WARNING)) as runtime:
+        return runtime.deserialize_cuda_engine(f.read())
+    
+def predict_with_engine(engine, data):
+    # Assuming your engine has a single input and a single output
+    input_shape = (200, 54, 1)  # Adjust based on your input shape
+
+    # Allocate device memory for inputs and outputs
+    d_input, h_input, d_output, h_output = common.allocate_buffers(engine)
+
+    # Copy input data to host
+    np.copyto(h_input, data.ravel())
+
+    # Copy input data to device
+    cuda.memcpy_htod(d_input, h_input)
+
+    # Execute the model
+    with engine.create_execution_context() as context:
+        context.execute(batch_size=1, bindings=[int(d_input), int(d_output)])
+
+    # Copy output data to host
+    cuda.memcpy_dtoh(h_output, d_output)
+
+    # Return the prediction
+    return h_output
 
 def process(res):
     # Parser
@@ -43,18 +74,51 @@ def process(res):
         perm_phase.append(phases)
         perm_amp.append(amplitudes)
 
-while True:
-    line = readline()
-    if "CSI_DATA" in line:
-        process(line)
-        packet_count += 1
-        if(packet_count >= 200):
-            print("Chunk", perm_amp[-1])
-            packet_count = 0
-        #total_packet_counts += 1
+def filter(amplitude_df):
+    amp_np = amplitude_df.to_numpy().T
+    filtered_data = []
+    savgol_filtered = []
+    for i in range(0, 64):
+  # lọc dữ liệu dùng hampel
+        result = hampel(amp_np[i], window_size=3, n_sigma=5.0)
+        filtered_data.append(result.filtered_data)
+        savgol_filtered.append(savgol_filter(result.filtered_data,window_length=5, polyorder=3))
+    displacement = np.transpose(savgol_filtered)
+    return displacement
 
-        #if render_plot_wait_timer.check() and len(perm_amp) > 2:
-           # render_plot_wait_timer.update()
-           # carrier_plot(perm_amp)#
+def predict(data):
+    normalized_data = data / 255.0
+    prediction = model.predict(normalized_data)
+    print(prediction)
 
+def main():
+    engine_path = "your_model.trt"  # Replace with your engine path
+    with open(engine_path, "rb") as f:
+        runtime = trt.Runtime()
+        engine = runtime.deserialize_engine(f)
+        context = engine.create_inference_context()
+        input_data = np.random.rand(1, 3, 224, 224).astype(np.float32)  # Adjust for your model input
+        inputs, outputs, bindings = context.get_bindings()
+        bindings[0].data = input_data
+        context.execute(bindings)
+
+
+    try:
+        while True:
+            line = readline()
+            if "CSI_DATA" in line:
+                process(line)
+                if(len(perm_amp) >= 200):
+                    print("Chunk", perm_amp[-1])
+                    #deque_list = list(perm_amp)
+                    perm_amp.clear
+                    #amp_df = pd.Dataframe(deque_list)
+                    #pred_data = filter(amp_df)
+                    #predict(pred_data)
+
+    except KeyboardInterrupt:
+        pass  # Handle Ctrl+C to gracefully exit
+
+if __name__ == "__main__":
+    main()
 
