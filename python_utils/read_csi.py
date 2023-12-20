@@ -2,17 +2,14 @@ import serial
 import math
 import numpy as np
 import pandas as pd
-import collections
-import sys
-from hampel import hampel
-from scipy.signal import savgol_filter
+
 import pycuda.driver as cuda
 import pycuda.autoinit
 import tensorrt as trt
 import paho.mqtt.client as paho
 from paho import mqtt
 
-
+# Function to load TensorRT engine from a '.engine' file
 def load_engine(engine_file_path):
     with open(engine_file_path, 'rb') as f, trt.Runtime(trt.Logger(trt.Logger.INFO)) as runtime:
         engine_data = f.read()
@@ -28,35 +25,12 @@ def allocate_buffers(engine):
 
     return h_input, d_input, h_output, d_output
 
-engine_file_path = '3act_cnn.engine'
-
-    # Load TensorRT engine
-trt_logger = trt.Logger(trt.Logger.INFO)
-trt.init_libnvinfer_plugins(trt_logger, '')
-engine = load_engine(engine_file_path)
-
-h_input, d_input, h_output, d_output = allocate_buffers(engine)
-# Deque definition
-perm_amp = []
-
-
-
 def on_connect(client, userdata, flags, rc, properties=None):
     print("CONNACK received with code %s." % rc)
 
 # with this callback you can see if your publish was successful
 def on_publish(client, userdata, mid, properties=None):
     print("mid: " + str(mid))
-
-# print which topic was subscribed to
-def on_subscribe(client, userdata, mid, granted_qos, properties=None):
-    print("Subscribed: " + str(mid) + " " + str(granted_qos))
-
-# print message, useful for checking if it was successful
-def on_message(client, userdata, msg):
-    print(msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
-
-# Function to load TensorRT engine from a '.engine' file
 
 def pub_mqtt(num):
     client = paho.Client(client_id="", userdata=None, protocol=paho.MQTTv5)
@@ -70,16 +44,10 @@ def pub_mqtt(num):
     client.connect("1904448cf01a4564947dae8e889f5fee.s2.eu.hivemq.cloud", 8883)
     client.loop_start()
 
-# setting callbacks, use separate functions like above for better visibility
-#client.on_subscribe = on_subscribe
-#client.on_message = on_message
     client.on_publish = on_publish
-
-# subscribe to all topics of encyclopedia by using the wildcard "#"
-#client.subscribe("predict", qos=1)
-# a single publish, this can also be done in loops, etc.
     print("MQTT called",num)
-    client.publish("predict", payload="Send from Nano " + str(num), qos=1)
+    client.publish("predict", payload==str(num), qos=1)
+
     client.loop_stop()
     client.disconnect()
 
@@ -128,17 +96,10 @@ def process(res):
 
     csi_size = len(csi_data)
     amplitudes = []
-    #phases = []
     if len(imaginary) > 0 and len(real) > 0:
         for j in range(int(csi_size / 2)):
             amplitude_calc = math.sqrt(imaginary[j] ** 2 + real[j] ** 2)
-            #phase_calc = math.atan2(imaginary[j], real[j])
             amplitudes.append(amplitude_calc)
-            #phases.append(phase_calc)
-        #perm_phase.append(phases)
-        
-        #print("Amp got")
-    #print(len(amplitudes))
     df = pd.DataFrame(amplitudes)
     return df
 
@@ -154,14 +115,19 @@ def predict(df):
     pub_mqtt(predicted_class)
 
 def main():
-   
-
     serial_port = "/dev/ttyUSB0"  # Use the specified serial port
     baud_rate = 921600  # Set the baud rate to 921600
     count = 0
     # Configure the serial port
     ser = serial.Serial(serial_port, baudrate=baud_rate, timeout=0.1)
     dfs = []
+
+    engine_file_path = '3act_cnn.engine'
+    # Load TensorRT engine
+    trt_logger = trt.Logger(trt.Logger.INFO)
+    trt.init_libnvinfer_plugins(trt_logger, '')
+    engine = load_engine(engine_file_path)
+    h_input, d_input, h_output, d_output = allocate_buffers(engine)
     try:
         while True:
             try:
@@ -179,7 +145,6 @@ def main():
                         result_df = pd.concat(dfs, axis=0)
                         #result_df = result_df.reset_index(drop=True)
                         print(result_df.shape)
-                        perm_amp.clear()
                         dfs = []
                         count = 0
                         predict(result_df)
