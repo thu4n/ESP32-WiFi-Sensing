@@ -9,7 +9,7 @@ The project use two ESP32 microcontrollers as both TX and RX with the help of th
 
 The dataset we collected is in the `datasets` folder. Although the CSI data collection has 7 activities, we only used 3 of them for training and evaluating machine learning models.
 
-All the logic for running on Jetson Nano is in `python_utils/read_csi.py`
+All the logic for running on Jetson Nano is in `python_utils/real_time_inference.py`
 
 Currently, we have trained 4 machine learing models:
 - A CNN model which has an accuracy of 0.95 and a loss of 0.02.
